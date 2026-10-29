@@ -3,5 +3,6 @@
     "Exact display name from TikTok Messages",
     "Another friend or group chat"
   ],
-  "message": "🔥"
+  "message": "🔥",
+  "jitter_seconds": [45, 900]
 }

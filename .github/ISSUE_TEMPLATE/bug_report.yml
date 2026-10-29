@@ -1,0 +1,45 @@
+name: Bug report
+description: Something did not send, schedule, or log in as expected.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste `config.json`, cookies, or files from `~/.tiktok_streak_keeper/`.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you ran and what you expected.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Command
+      description: The exact command, with chat names removed.
+      render: bash
+      placeholder: python3 tiktok_streak_keeper.py --now
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: macOS 15 / Windows 11 / Ubuntu 24.04
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: python3 --version
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log lines
+      description: Redact chat names. Copy from `~/.tiktok_streak_keeper/streak.log` if useful.
+      render: text

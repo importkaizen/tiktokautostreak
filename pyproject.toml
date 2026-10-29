@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tiktokautostreak"
+version = "1.0.0"
+description = "Local daily check-in helper for TikTok Web Messages using your own browser session."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+authors = [{ name = "importkaizen" }]
+keywords = ["tiktok", "messages", "playwright", "automation", "streak"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Communications :: Chat",
+]
+dependencies = ["playwright>=1.40.0"]
+
+[project.urls]
+Homepage = "https://github.com/importkaizen/tiktokautostreak"
+Issues = "https://github.com/importkaizen/tiktokautostreak/issues"
+Changelog = "https://github.com/importkaizen/tiktokautostreak/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+py-modules = ["tiktok_streak_keeper"]

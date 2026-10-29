@@ -8,6 +8,7 @@ using TikTok Web Messages (no For You feed).
   python3 tiktok_streak_keeper.py --init
   python3 tiktok_streak_keeper.py --login
   python3 tiktok_streak_keeper.py --now
+  python3 tiktok_streak_keeper.py --status
   python3 tiktok_streak_keeper.py --install-schedule --hour 14 --minute 30
 """
 
@@ -25,6 +26,8 @@ import time
 import venv
 from pathlib import Path
 from typing import Any, Dict, List
+
+__version__ = "1.0.0"
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 EXAMPLE_CONFIG = SCRIPT_DIR / "config.example.json"
@@ -166,7 +169,8 @@ def load_config(path: Path) -> Dict[str, Any]:
 
     placeholders = [t for t in targets if t.lower() in PLACEHOLDER_TARGETS]
     if placeholders:
-        log("Replace the placeholder names in config.json with real TikTok chat names.")
+        log(f"{path} still has example placeholder names: {placeholders}")
+        log("Put the exact TikTok Messages sidebar names in the \"targets\" list.")
         raise SystemExit(1)
 
     data_dir = data.get("data_dir")
@@ -486,14 +490,93 @@ def uninstall_schedule() -> int:
     return 0
 
 
+def _exists_label(path: Path) -> str:
+    return "yes" if path.exists() else "no"
+
+
+def schedule_status() -> str:
+    if sys.platform == "darwin":
+        if not LAUNCHD_PLIST.exists():
+            return "not installed"
+        try:
+            with open(LAUNCHD_PLIST, "rb") as f:
+                data = plistlib.load(f)
+            interval = data.get("StartCalendarInterval") or {}
+            hour = interval.get("Hour")
+            minute = interval.get("Minute")
+            if hour is not None and minute is not None:
+                return f"LaunchAgent at {int(hour):02d}:{int(minute):02d}"
+        except Exception:
+            pass
+        return f"LaunchAgent ({LAUNCHD_PLIST})"
+    if sys.platform == "win32":
+        res = subprocess.run(
+            ["schtasks", "/Query", "/TN", WINDOWS_TASK_NAME],
+            capture_output=True,
+            text=True,
+        )
+        return "Task Scheduler job installed" if res.returncode == 0 else "not installed"
+    existing = current_crontab()
+    for line in existing.splitlines():
+        if CRON_MARKER in line:
+            return f"crontab: {line.replace(CRON_MARKER, '').strip()}"
+    return "not installed"
+
+
+def print_status(config_path: Path) -> int:
+    print(f"TikTok Streak Keeper {__version__}")
+    print(f"{'Config':<12} {config_path} ({'found' if config_path.exists() else 'missing'})")
+
+    targets: List[str] = []
+    if config_path.exists():
+        try:
+            cfg = load_config(config_path)
+            targets = cfg["targets"]
+            print(f"{'Chats':<12} {len(targets)} configured")
+            print(f"{'Message':<12} {cfg['message']}")
+            lo, hi = cfg["jitter_seconds"]
+            print(f"{'Jitter':<12} {lo}-{hi}s")
+        except SystemExit:
+            print(f"{'Config':<12} present, but invalid — run --init or fix JSON")
+    else:
+        apply_data_dir(DEFAULT_DATA_DIR)
+        print(f"{'Chats':<12} none (run --init)")
+
+    print(f"{'Data dir':<12} {DATA_DIR}")
+    print(f"{'Session':<12} {_exists_label(PROFILE_DIR)}")
+    print(f"{'Playwright':<12} {_exists_label(venv_python_path())}")
+    print(f"{'Schedule':<12} {schedule_status()}")
+
+    if STATE_FILE.exists():
+        try:
+            state = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+            completed = state.get("completed") or {}
+            done = sum(1 for ok in completed.values() if ok)
+            total = len(targets) if targets else len(completed)
+            print(f"{'Last run':<12} {state.get('date', 'unknown')} ({done}/{total} chats)")
+            print(f"{'Updated':<12} {state.get('updated_at', 'unknown')}")
+        except Exception:
+            print(f"{'Last run':<12} unreadable ({STATE_FILE})")
+    else:
+        print(f"{'Last run':<12} none")
+
+    print(f"{'Log':<12} {LOG_FILE}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Send the same daily TikTok Messages check-in to chats you list in config.json."
+        prog="tiktok_streak_keeper.py",
+        description="Send a daily TikTok Messages check-in to chats you list in config.json.",
+        epilog="Not affiliated with TikTok. Session cookies stay on this machine.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    parser.add_argument("--version", action="version", version=f"TikTok Streak Keeper {__version__}")
     parser.add_argument("--init", action="store_true", help="Create config.json from the example file")
     parser.add_argument("--login", action="store_true", help="Open a browser to log in and save the session")
     parser.add_argument("--now", action="store_true", help="Run immediately without the random startup wait")
     parser.add_argument("--force", action="store_true", help="Send even if today's run already succeeded")
+    parser.add_argument("--status", action="store_true", help="Print config, session, schedule, and last-run state")
     parser.add_argument("--install-schedule", action="store_true", help="Install the daily scheduled job")
     parser.add_argument("--uninstall-schedule", action="store_true", help="Remove the daily scheduled job")
     parser.add_argument("--hour", type=int, default=14, help="Hour (0-23) for the daily schedule")
@@ -510,6 +593,9 @@ def main() -> int:
         return uninstall_schedule()
 
     config_path = args.config if args.config else default_config_path()
+
+    if args.status:
+        return print_status(config_path)
 
     if args.login:
         if config_path.exists():
