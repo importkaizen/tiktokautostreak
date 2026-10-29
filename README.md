@@ -16,7 +16,7 @@ The first run creates a private virtual environment and installs Playwright + Ch
 
 ```bash
 git clone https://github.com/importkaizen/tiktokautostreak.git
-cd tiktok-streak-keeper
+cd tiktokautostreak
 python3 tiktok_streak_keeper.py --init
 ```
 
